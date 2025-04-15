@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-backend
+  labels:
+    app: feedback-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback-backend
+  template:
+    metadata:
+      labels:
+        app: feedback-backend
+    spec:
+      containers:
+      - name: feedback-backend
+        image: feedback-backend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: uri
+        - name: PORT
+          value: "3000"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"

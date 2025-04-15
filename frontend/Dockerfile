@@ -3,11 +3,12 @@ FROM nginx:alpine
 # Copy the custom nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Copy static files
-COPY . /usr/share/nginx/html
+# Create directory for static files
+RUN mkdir -p /usr/share/nginx/html
 
-# Remove the nginx.conf from the public directory to avoid it being served
-RUN rm -f /usr/share/nginx/html/nginx.conf
+# Copy static files
+COPY index.html /usr/share/nginx/html/
+COPY script.js /usr/share/nginx/html/
 
 EXPOSE 8080
 

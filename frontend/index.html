@@ -1,507 +1,348 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Feedback Collector</title>
-  <style>
-    /* General Styles */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'San Francisco', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    }
-
-    body {
-      background-color: #f0f4f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 20px;
-      color: #2d3748;
-    }
-
-    .container {
-      background-color: #ffffff;
-      padding: 40px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-      border-radius: 16px;
-      width: 100%;
-      max-width: 800px;
-      transition: transform 0.3s ease;
-    }
-
-    h1 {
-      color: #2c5282;
-      text-align: center;
-      font-size: 2.2em;
-      margin-bottom: 30px;
-      font-weight: 700;
-      position: relative;
-      padding-bottom: 15px;
-    }
-
-    h1::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80px;
-      height: 4px;
-      background: linear-gradient(90deg, #3182ce, #2c5282);
-      border-radius: 2px;
-    }
-
-    h2 {
-      color: #2c5282;
-      margin-bottom: 20px;
-      font-size: 1.5em;
-      font-weight: 600;
-    }
-
-    /* Form Styles */
-    .feedback-form {
-      margin-bottom: 30px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-      color: #4a5568;
-      font-size: 1.1em;
-    }
-
-    .feedback-form input, .feedback-form textarea {
-      width: 100%;
-      padding: 15px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 1.1em;
-      transition: all 0.3s ease;
-      background-color: #f8fafc;
-    }
-
-    .feedback-form input:focus, .feedback-form textarea:focus {
-      border-color: #3182ce;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
-      background-color: #fff;
-    }
-
-    .feedback-form textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    .btn {
-      display: inline-block;
-      background-color: #3182ce;
-      color: white;
-      padding: 14px 25px;
-      font-size: 1.1em;
-      font-weight: 600;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-align: center;
-      box-shadow: 0 4px 6px rgba(49, 130, 206, 0.2);
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #3182ce, #2c5282);
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #4a5568, #2d3748);
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 7px 14px rgba(50, 50, 93, 0.2);
-    }
-
-    .btn:active {
-      transform: translateY(1px);
-    }
-
-    .btn-block {
-      width: 100%;
-    }
-
-    /* Feedback List Styles */
-    .feedback-list {
-      display: none;
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .feedback-list ul {
-      list-style-type: none;
-      padding: 0;
-    }
-
-    .feedback-list li {
-      background-color: #fff;
-      padding: 20px;
-      margin: 15px 0;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border-left: 5px solid #3182ce;
-    }
-
-    .feedback-list li:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .feedback-list .name {
-      font-weight: 600;
-      color: #2c5282;
-      font-size: 1.2em;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-    }
-
-    .feedback-list .name::before {
-      content: '👤';
-      margin-right: 8px;
-      font-size: 1.1em;
-    }
-
-    .feedback-list .feedback {
-      color: #4a5568;
-      font-size: 1.05em;
-      line-height: 1.5;
-    }
-
-    /* Modal Styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      justify-content: center;
-      align-items: center;
-      transition: opacity 0.3s ease;
-      z-index: 1000;
-      backdrop-filter: blur(5px);
-    }
-
-    .modal-content {
-      background-color: #fff;
-      padding: 35px;
-      border-radius: 16px;
-      max-width: 600px;
-      width: 90%;
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-      position: relative;
-      animation: modalFadeIn 0.3s ease;
-    }
-
-    @keyframes modalFadeIn {
-      from {
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedback Collector</title>
+<style>
+/* General Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'San Francisco', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+body {
+    background-color: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: #2d3748;
+}
+.container {
+    background-color: #ffffff;
+    padding: 40px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 800px;
+    transition: transform 0.3s ease;
+}
+h1 {
+    color: #2c5282;
+    text-align: center;
+    font-size: 2.2em;
+    margin-bottom: 30px;
+    font-weight: 700;
+    position: relative;
+    padding-bottom: 15px;
+}
+h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #3182ce, #2c5282);
+    border-radius: 2px;
+}
+h2 {
+    color: #2c5282;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-weight: 600;
+}
+/* Form Styles */
+.feedback-form {
+    margin-bottom: 30px;
+}
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #4a5568;
+    font-size: 1.1em;
+}
+.feedback-form input, .feedback-form textarea {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    background-color: #f8fafc;
+}
+.feedback-form input:focus, .feedback-form textarea:focus {
+    border-color: #3182ce;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.2);
+    background-color: #fff;
+}
+.feedback-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+.btn {
+    display: inline-block;
+    background-color: #3182ce;
+    color: white;
+    padding: 14px 25px;
+    font-size: 1.1em;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(49, 130, 206, 0.2);
+}
+.btn-primary {
+    background: linear-gradient(135deg, #3182ce, #2c5282);
+}
+.btn-secondary {
+    background: linear-gradient(135deg, #4a5568, #2d3748);
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 14px rgba(50, 50, 93, 0.2);
+}
+.btn:active {
+    transform: translateY(1px);
+}
+.btn-block {
+    width: 100%;
+}
+/* Feedback List Styles */
+.feedback-list {
+    display: none;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+}
+.feedback-list ul {
+    list-style-type: none;
+    padding: 0;
+}
+.feedback-list li {
+    background-color: #fff;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-left: 5px solid #3182ce;
+}
+.feedback-list li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+.feedback-list .name {
+    font-weight: 600;
+    color: #2c5282;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+.feedback-list .name::before {
+    content: ' ';
+    margin-right: 8px;
+    font-size: 1.1em;
+}
+.feedback-list .feedback {
+    color: #4a5568;
+    font-size: 1.05em;
+    line-height: 1.5;
+}
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+.modal-content {
+    background-color: #fff;
+    padding: 35px;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: modalFadeIn 0.3s ease;
+}
+@keyframes modalFadeIn {
+    from {
         opacity: 0;
         transform: translateY(-20px);
-      }
-      to {
+    }
+    to {
         opacity: 1;
         transform: translateY(0);
-      }
     }
-
-    .modal-content h3 {
-      color: #2c5282;
-      margin-bottom: 20px;
-      font-size: 1.8em;
-      text-align: center;
-      position: relative;
-      padding-bottom: 10px;
-    }
-
-    .modal-content h3::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 3px;
-      background: linear-gradient(90deg, #3182ce, #2c5282);
-      border-radius: 2px;
-    }
-
-    .modal-content p {
-      color: #4a5568;
-      font-size: 1.2em;
-      line-height: 1.6;
-      margin-top: 15px;
-      background-color: #f8fafc;
-      padding: 20px;
-      border-radius: 10px;
-      border-left: 4px solid #3182ce;
-    }
-
-    .close {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      font-size: 1.8em;
-      color: #a0aec0;
-      cursor: pointer;
-      transition: color 0.3s ease;
-      height: 40px;
-      width: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-    }
-
-    .close:hover {
-      color: #2c5282;
-      background-color: #f7fafc;
-    }
-
-    /* Success Message */
-    .success-message {
-      display: none;
-      background-color: #c6f6d5;
-      color: #2f855a;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      text-align: center;
-      font-weight: 500;
-      animation: fadeOut 5s forwards;
-    }
-
-    @keyframes fadeOut {
-      0% { opacity: 1; }
-      70% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      .container {
+}
+.modal-content h3 {
+    color: #2c5282;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+    text-align: center;
+    position: relative;
+    padding-bottom: 10px;
+}
+.modal-content h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, #3182ce, #2c5282);
+    border-radius: 2px;
+}
+.modal-content p {
+    color: #4a5568;
+    font-size: 1.2em;
+    line-height: 1.6;
+    margin-top: 15px;
+    background-color: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 4px solid #3182ce;
+}
+.close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 1.8em;
+    color: #a0aec0;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    height: 40px;
+    width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+.close:hover {
+    color: #2c5282;
+    background-color: #f7fafc;
+}
+/* Success Message */
+.success-message {
+    display: none;
+    background-color: #c6f6d5;
+    color: #2f855a;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 500;
+    animation: fadeOut 5s forwards;
+}
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    70% { opacity: 1; }
+    100% { opacity: 0; }
+}
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
         padding: 25px;
-      }
-
-      h1 {
+    }
+    h1 {
         font-size: 1.8em;
-      }
-
-      .btn {
+    }
+    .btn {
         padding: 12px 20px;
         font-size: 1em;
-      }
-      
-      .modal-content {
+    }
+    .modal-content {
         padding: 25px;
         width: 95%;
-      }
     }
-
-    @media (max-width: 480px) {
-      body {
+}
+@media (max-width: 480px) {
+    body {
         padding: 10px;
-      }
-      
-      .container {
+    }
+    .container {
         padding: 20px;
         border-radius: 12px;
-      }
-      
-      h1 {
-        font-size: 1.5em;
-      }
-      
-      .feedback-form input, .feedback-form textarea {
-        padding: 12px;
-      }
-      
-      .feedback-list li {
-        padding: 15px;
-      }
     }
-  </style>
+    h1 {
+        font-size: 1.5em;
+    }
+    .feedback-form input, .feedback-form textarea {
+        padding: 12px;
+    }
+    .feedback-list li {
+        padding: 15px;
+    }
+}
+</style>
 </head>
 <body>
-
-  <div class="container">
+<div class="container">
     <header>
-      <h1>Feedback Collector</h1>
+        <h1>Feedback Collector</h1>
     </header>
-
     <div id="success-message" class="success-message">
-      Feedback submitted successfully!
+        Feedback submitted successfully!
     </div>
-
     <section class="feedback-form">
-      <form id="feedback-form">
-        <div class="form-group">
-          <label for="name">Your Name</label>
-          <input type="text" id="name" placeholder="Enter your name" required />
-        </div>
-        
-        <div class="form-group">
-          <label for="feedback">Your Feedback</label>
-          <textarea id="feedback" placeholder="Share your thoughts with us" required></textarea>
-        </div>
-        
-        <button type="submit" id="submit-feedback" class="btn btn-primary btn-block">Submit Feedback</button>
-      </form>
+        <form id="feedbackForm">
+            <div class="form-group">
+                <label for="name">Your Name</label>
+                <input type="text" id="name" placeholder="Enter your name" required />
+            </div>
+            <div class="form-group">
+                <label for="message">Your Feedback</label>
+                <textarea id="message" placeholder="Share your thoughts with us" required></textarea>
+            </div>
+            <button type="submit" id="submit-feedback" class="btn btn-primary btn-block">Submit Feedback</button>
+        </form>
     </section>
-
     <button id="view-feedbacks" class="btn btn-secondary btn-block">View Feedbacks</button>
-
     <section class="feedback-list" id="feedbacks-section">
-      <h2>Feedback List</h2>
-      <ul id="feedbacks">
-        <!-- Feedback items will be dynamically inserted here by JavaScript -->
-      </ul>
+        <h2>Feedback List</h2>
+        <ul id="feedbackList">
+            <!-- Feedback items will be dynamically inserted here by JavaScript -->
+        </ul>
     </section>
-  </div>
+</div>
 
-  <!-- Modal for Feedback Details -->
-  <div id="feedback-modal" class="modal">
+<!-- Modal for Feedback Details -->
+<div id="feedback-modal" class="modal">
     <div class="modal-content">
-      <span class="close" id="close-modal">&times;</span>
-      <h3 id="modal-name"></h3>
-      <p id="modal-feedback"></p>
+        <span class="close" id="close-modal">&times;</span>
+        <h3 id="modal-name"></h3>
+        <p id="modal-feedback"></p>
     </div>
-  </div>
+</div>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const feedbackForm = document.getElementById("feedback-form");
-      const feedbacksList = document.getElementById("feedbacks");
-      const feedbacksSection = document.getElementById("feedbacks-section");
-      const viewFeedbacksButton = document.getElementById("view-feedbacks");
-      const feedbackModal = document.getElementById("feedback-modal");
-      const modalName = document.getElementById("modal-name");
-      const modalFeedback = document.getElementById("modal-feedback");
-      const closeModal = document.getElementById("close-modal");
-      const successMessage = document.getElementById("success-message");
+<!-- Load environment config script -->
+<script src="/env-config.js"></script>
 
-      // Function to display all feedbacks
-      function displayFeedbacks() {
-        feedbacksList.innerHTML = '';
-        const feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
-        
-        if (feedbacks.length === 0) {
-          const emptyMessage = document.createElement("p");
-          emptyMessage.textContent = "No feedbacks yet. Be the first to share your thoughts!";
-          emptyMessage.style.textAlign = "center";
-          emptyMessage.style.padding = "20px";
-          emptyMessage.style.color = "#718096";
-          feedbacksList.appendChild(emptyMessage);
-          return;
-        }
-        
-        feedbacks.forEach((feedback, index) => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <p class="name">${feedback.name}</p>
-            <p class="feedback">${feedback.text.length > 150 ? feedback.text.substring(0, 150) + '...' : feedback.text}</p>
-          `;
-          li.addEventListener('click', function() {
-            // Open modal with the selected feedback's details
-            modalName.textContent = feedback.name;
-            modalFeedback.textContent = feedback.text;
-            feedbackModal.style.display = "flex";
-          });
-          feedbacksList.appendChild(li);
-        });
-      }
-
-      // Toggle feedback list visibility when the "View Feedbacks" button is clicked
-      viewFeedbacksButton.addEventListener("click", function() {
-        if (feedbacksSection.style.display === 'none' || feedbacksSection.style.display === '') {
-          feedbacksSection.style.display = 'block';
-          viewFeedbacksButton.textContent = 'Hide Feedbacks';
-          displayFeedbacks();
-        } else {
-          feedbacksSection.style.display = 'none';
-          viewFeedbacksButton.textContent = 'View Feedbacks';
-        }
-      });
-
-      // Form submission
-      feedbackForm.addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        const name = document.getElementById("name").value;
-        const feedbackText = document.getElementById("feedback").value;
-
-        if (name && feedbackText) {
-          // Create a new feedback object
-          const newFeedback = {
-            name: name,
-            text: feedbackText
-          };
-
-          // Get the existing feedbacks from localStorage
-          const feedbacks = JSON.parse(localStorage.getItem('feedbacks')) || [];
-
-          // Add new feedback to the array
-          feedbacks.push(newFeedback);
-
-          // Save feedbacks back to localStorage
-          localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
-
-          // Clear the form
-          document.getElementById("name").value = "";
-          document.getElementById("feedback").value = "";
-          
-          // Show success message
-          successMessage.style.display = 'block';
-          successMessage.style.opacity = '1';
-          
-          // Automatically hide the success message after animation
-          setTimeout(() => {
-            successMessage.style.display = 'none';
-          }, 5000);
-          
-          // If feedback list is visible, update it
-          if (feedbacksSection.style.display === 'block') {
-            displayFeedbacks();
-          }
-        } else {
-          alert("Please fill in all fields.");
-        }
-      });
-
-      // Close modal
-      closeModal.addEventListener("click", function() {
-        feedbackModal.style.display = "none";
-      });
-
-      // Close modal if clicked outside of it
-      window.addEventListener("click", function(event) {
-        if (event.target === feedbackModal) {
-          feedbackModal.style.display = "none";
-        }
-      });
-    });
-  </script>
-
+<!-- Load main script -->
+<script src="/script.js"></script>
 </body>
 </html>

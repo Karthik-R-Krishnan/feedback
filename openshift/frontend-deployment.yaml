@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feedback-frontend
+  labels:
+    app: feedback-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feedback-frontend
+  template:
+    metadata:
+      labels:
+        app: feedback-frontend
+    spec:
+      containers:
+      - name: feedback-frontend
+        image: feedback-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: BACKEND_URL
+          value: "http://feedback-backend"
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "250m"

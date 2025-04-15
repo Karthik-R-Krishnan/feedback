@@ -8,11 +8,11 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the application
+# Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
+# Expose the port the app will run on
 EXPOSE 3000
 
-# Run the app
+# Run the application
 CMD ["node", "server.js"]

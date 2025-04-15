@@ -13,7 +13,9 @@ EXPOSE 8080
 
 # Use a script to start nginx with the environment variable
 RUN echo '#!/bin/sh\n\
-echo "window.BACKEND_URL = \"${BACKEND_URL:-http://feedback-backend:8080}\";" > /usr/share/nginx/html/env-config.js\n\
+if [ -n "$BACKEND_URL" ]; then\n\
+  sed -i "s|http://feedback-backend:8080|$BACKEND_URL|g" /etc/nginx/nginx.conf\n\
+fi\n\
 exec nginx -g "daemon off;"' > /docker-entrypoint.sh && \
 chmod +x /docker-entrypoint.sh
 

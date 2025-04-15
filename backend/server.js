@@ -4,7 +4,13 @@ const cors = require("cors");
 const path = require("path");
 const app = express();
 
-app.use(cors());
+// Configure CORS to be more permissive
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 
 // Connect to MongoDB using environment variable or fallback to localhost for local development
@@ -24,12 +30,15 @@ const Feedback = mongoose.model("Feedback", {
 app.post("/api/feedback", async (req, res) => {
   try {
     const { name, message } = req.body;
+    if (!name || !message) {
+      return res.status(400).send("Name and message are required");
+    }
     const feedback = new Feedback({ name, message });
     await feedback.save();
     res.status(201).send("Feedback saved");
   } catch (error) {
     console.error("Error saving feedback:", error);
-    res.status(500).send("Error saving feedback");
+    res.status(500).json({ error: "Error saving feedback", details: error.message });
   }
 });
 
@@ -39,7 +48,7 @@ app.get("/api/feedback", async (req, res) => {
     res.json(feedbacks);
   } catch (error) {
     console.error("Error fetching feedback:", error);
-    res.status(500).send("Error fetching feedback");
+    res.status(500).json({ error: "Error fetching feedback", details: error.message });
   }
 });
 

@@ -1,18 +1,21 @@
-# Use the official Node.js image
+# Use Node.js as the base image
 FROM node:16
 
-# Set the working directory
+# Set working directory in the container
 WORKDIR /usr/src/app
 
-# Copy package.json and install dependencies
-COPY package*.json ./
+# Copy package.json and package-lock.json to the working directory
+COPY backend/package*.json ./
+
+# Install the application dependencies
 RUN npm install
 
-# Copy the rest of the application code
-COPY . .
+# Copy the application code
+COPY backend/ ./
+COPY frontend/ ./frontend/
 
 # Expose the port the app will run on
 EXPOSE 3000
 
-# Run the application
+# Command to run the application
 CMD ["node", "server.js"]

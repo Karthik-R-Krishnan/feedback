@@ -1,13 +1,24 @@
-FROM node:18-alpine
+# Backend container
+FROM node:18 as builder
 
 WORKDIR /app
 
-COPY ./backend/package*.json ./
+# Copy backend and frontend
+COPY backend backend
+COPY frontend frontend
 
+# Build frontend
+WORKDIR /app/frontend
+RUN npm install && npm run build
+
+# Install backend deps
+WORKDIR /app/backend
 RUN npm install
 
-COPY ./backend ./
+# Serve frontend from backend
+RUN mkdir -p /app/backend/public
+RUN cp -r /app/frontend/build/* /app/backend/public/
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "index.js"]

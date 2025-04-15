@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", function() {
   // Get the backend URL from environment or default to local development URL
-  const backendUrl = window.BACKEND_URL || "http://localhost:3000";
+  const backendUrl = window.BACKEND_URL || "http://localhost:8080";
+  console.log("Using backend URL:", backendUrl);
 
   document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -8,11 +9,16 @@ document.addEventListener("DOMContentLoaded", function() {
     const message = document.getElementById("message").value;
     
     try {
-      await fetch(`${backendUrl}/api/feedback`, {
+      const response = await fetch(`${backendUrl}/api/feedback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, message })
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
       
       document.getElementById("name").value = "";
       document.getElementById("message").value = "";
@@ -31,14 +37,19 @@ document.addEventListener("DOMContentLoaded", function() {
       loadFeedback();
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert("Failed to submit feedback. Please try again.");
+      alert(`Failed to submit feedback: ${error.message}`);
     }
   });
 
   async function loadFeedback() {
     try {
-      const res = await fetch(`${backendUrl}/api/feedback`);
-      const data = await res.json();
+      const response = await fetch(`${backendUrl}/api/feedback`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
       const list = document.getElementById("feedbackList");
       
       if (!list) return;
@@ -68,6 +79,7 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     } catch (error) {
       console.error("Error loading feedback:", error);
+      alert(`Failed to load feedback: ${error.message}`);
     }
   }
 

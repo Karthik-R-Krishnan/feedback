@@ -1,17 +1,19 @@
 FROM nginx:alpine
 
-# Remove default nginx configuration
-RUN rm -rf /etc/nginx/conf.d/*
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Create directory for static files
-RUN mkdir -p /usr/share/nginx/html
+RUN mkdir -p /usr/share/nginx/html && \
+    chown -R appuser:appgroup /usr/share/nginx/html
 
 # Copy static files
-COPY index.html /usr/share/nginx/html/
-COPY script.js /usr/share/nginx/html/
+COPY --chown=appuser:appgroup index.html /usr/share/nginx/html/
+COPY --chown=appuser:appgroup script.js /usr/share/nginx/html/
 
 # Create env-config.js file
-RUN echo 'window.BACKEND_URL = "http://feedback-backend:8080";' > /usr/share/nginx/html/env-config.js
+RUN echo 'window.BACKEND_URL = "http://feedback-backend:8080";' > /usr/share/nginx/html/env-config.js && \
+    chown appuser:appgroup /usr/share/nginx/html/env-config.js
 
 # Create custom nginx configuration
 RUN echo 'server {\n\
@@ -37,6 +39,10 @@ RUN echo 'server {\n\
     }\n\
 }' > /etc/nginx/conf.d/default.conf
 
+# Create directories for nginx cache and set permissions
+RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp && \
+    chown -R appuser:appgroup /var/cache/nginx
+
 EXPOSE 8080
 
 # Use a script to start nginx with the environment variable
@@ -45,6 +51,10 @@ if [ -n "$BACKEND_URL" ]; then\n\
   echo "window.BACKEND_URL = \"$BACKEND_URL\";" > /usr/share/nginx/html/env-config.js\n\
 fi\n\
 exec nginx -g "daemon off;"' > /docker-entrypoint.sh && \
-chmod +x /docker-entrypoint.sh
+chmod +x /docker-entrypoint.sh && \
+chown appuser:appgroup /docker-entrypoint.sh
+
+# Switch to non-root user
+USER appuser
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

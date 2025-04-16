@@ -1,0 +1,400 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: feedback-app-template
+  annotations:
+    description: "Feedback Collector Application with MongoDB"
+    tags: "feedback,mongodb,nodejs,nginx"
+parameters:
+- name: APP_NAME
+  description: "Application name"
+  value: "feedback-collector"
+  required: true
+- name: MONGODB_USER
+  description: "MongoDB user"
+  value: "feedbackuser"
+  required: true
+- name: MONGODB_PASSWORD
+  description: "MongoDB password"
+  generate: "expression"
+  from: "[a-zA-Z0-9]{16}"
+  required: true
+- name: MONGODB_DATABASE
+  description: "MongoDB database name"
+  value: "feedbackdb"
+  required: true
+- name: MONGODB_ADMIN_PASSWORD
+  description: "MongoDB admin password"
+  generate: "expression"
+  from: "[a-zA-Z0-9]{16}"
+  required: true
+- name: MONGODB_VERSION
+  description: "MongoDB version"
+  value: "4.4"
+  required: true
+- name: MONGODB_PERSISTENT_VOLUME_SIZE
+  description: "MongoDB persistent volume size"
+  value: "1Gi"
+  required: true
+- name: BACKEND_IMAGE
+  description: "Backend image name"
+  value: "feedback-backend"
+  required: true
+- name: FRONTEND_IMAGE
+  description: "Frontend image name"
+  value: "feedback-frontend"
+  required: true
+- name: GITHUB_REPO
+  description: "GitHub repository URL"
+  value: "https://github.com/yourusername/feedback-collector.git"
+  required: true
+- name: GITHUB_BRANCH
+  description: "GitHub branch"
+  value: "main"
+  required: true
+- name: GITHUB_SECRET
+  description: "GitHub webhook secret"
+  generate: "expression"
+  from: "[a-zA-Z0-9]{32}"
+  required: true
+objects:
+# MongoDB Secret
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: mongodb-secret
+  type: Opaque
+  stringData:
+    database-name: ${MONGODB_DATABASE}
+    database-user: ${MONGODB_USER}
+    database-password: ${MONGODB_PASSWORD}
+    database-admin-password: ${MONGODB_ADMIN_PASSWORD}
+    uri: mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}
+
+# MongoDB PersistentVolumeClaim
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: mongodb-pvc
+  spec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${MONGODB_PERSISTENT_VOLUME_SIZE}
+
+# MongoDB Deployment
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: mongodb
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: mongodb
+    template:
+      metadata:
+        labels:
+          app: mongodb
+      spec:
+        containers:
+        - name: mongodb
+          image: registry.access.redhat.com/rhscl/mongodb-${MONGODB_VERSION}-rhel7
+          ports:
+          - containerPort: 27017
+          env:
+          - name: MONGODB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: database-name
+          - name: MONGODB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: database-user
+          - name: MONGODB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: database-password
+          - name: MONGODB_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: database-admin-password
+          volumeMounts:
+          - name: mongodb-data
+            mountPath: /var/lib/mongodb/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          readinessProbe:
+            exec:
+              command:
+              - mongo
+              - --eval
+              - "db.adminCommand('ping')"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+              - mongo
+              - --eval
+              - "db.adminCommand('ping')"
+            initialDelaySeconds: 30
+            periodSeconds: 10
+        volumes:
+        - name: mongodb-data
+          persistentVolumeClaim:
+            claimName: mongodb-pvc
+
+# MongoDB Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: mongodb
+  spec:
+    selector:
+      app: mongodb
+    ports:
+    - port: 27017
+      targetPort: 27017
+    type: ClusterIP
+
+# Backend BuildConfig
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: ${BACKEND_IMAGE}
+  spec:
+    source:
+      git:
+        uri: ${GITHUB_REPO}
+        ref: ${GITHUB_BRANCH}
+        contextDir: backend
+      contextDir: backend
+    strategy:
+      type: Docker
+      dockerStrategy:
+        dockerfilePath: Dockerfile
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${BACKEND_IMAGE}:latest
+    triggers:
+    - type: GitHub
+      github:
+        secret: ${GITHUB_SECRET}
+    - type: Generic
+      generic:
+        secret: ${GITHUB_SECRET}
+    - type: ImageChange
+      imageChange: {}
+    - type: ConfigChange
+
+# Backend ImageStream
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: ${BACKEND_IMAGE}
+  spec:
+    lookupPolicy:
+      local: true
+
+# Backend Deployment
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: feedback-backend
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: feedback-backend
+    template:
+      metadata:
+        labels:
+          app: feedback-backend
+      spec:
+        containers:
+        - name: feedback-backend
+          image: ${BACKEND_IMAGE}:latest
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8080
+          env:
+          - name: MONGODB_URI
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: uri
+          - name: PORT
+            value: "8080"
+          - name: NODE_ENV
+            value: "production"
+          - name: FRONTEND_URL
+            value: "http://feedback-frontend:8080"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+# Backend Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: feedback-backend
+  spec:
+    selector:
+      app: feedback-backend
+    ports:
+    - port: 8080
+      targetPort: 8080
+    type: ClusterIP
+
+# Frontend BuildConfig
+- apiVersion: build.openshift.io/v1
+  kind: BuildConfig
+  metadata:
+    name: ${FRONTEND_IMAGE}
+  spec:
+    source:
+      git:
+        uri: ${GITHUB_REPO}
+        ref: ${GITHUB_BRANCH}
+        contextDir: frontend
+      contextDir: frontend
+    strategy:
+      type: Docker
+      dockerStrategy:
+        dockerfilePath: Dockerfile
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${FRONTEND_IMAGE}:latest
+    triggers:
+    - type: GitHub
+      github:
+        secret: ${GITHUB_SECRET}
+    - type: Generic
+      generic:
+        secret: ${GITHUB_SECRET}
+    - type: ImageChange
+      imageChange: {}
+    - type: ConfigChange
+
+# Frontend ImageStream
+- apiVersion: image.openshift.io/v1
+  kind: ImageStream
+  metadata:
+    name: ${FRONTEND_IMAGE}
+  spec:
+    lookupPolicy:
+      local: true
+
+# Frontend Deployment
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: feedback-frontend
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: feedback-frontend
+    template:
+      metadata:
+        labels:
+          app: feedback-frontend
+      spec:
+        containers:
+        - name: feedback-frontend
+          image: ${FRONTEND_IMAGE}:latest
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8080
+          env:
+          - name: BACKEND_URL
+            value: "http://feedback-backend:8080"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+                - ALL
+
+# Frontend Service
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: feedback-frontend
+  spec:
+    selector:
+      app: feedback-frontend
+    ports:
+    - port: 8080
+      targetPort: 8080
+    type: ClusterIP
+
+# Frontend Route
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    name: feedback-frontend
+  spec:
+    to:
+      kind: Service
+      name: feedback-frontend
+    port:
+      targetPort: 8080
+    tls:
+      termination: edge 

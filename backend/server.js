@@ -99,20 +99,16 @@ app.post("/api/feedback", async (req, res, next) => {
 
 app.get("/api/feedback", async (req, res, next) => {
   try {
-    const feedbacks = await Feedback.find().sort({ createdAt: -1 });
-    res.json(feedbacks);
+    const feedback = await Feedback.find().sort({ createdAt: -1 });
+    res.json(feedback);
   } catch (error) {
     next(error);
   }
 });
 
-// Health check endpoint
+// Health check endpoint for OpenShift
 app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+  res.status(200).json({ status: "healthy" });
 });
 
 // Apply error handling middleware

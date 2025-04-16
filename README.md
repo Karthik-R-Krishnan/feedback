@@ -164,9 +164,6 @@ This application is designed to be deployed on Red Hat OpenShift. The deployment
 4. Push to the branch: `git push origin feature/my-feature`
 5. Submit a pull request
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 

@@ -5,7 +5,7 @@ metadata:
   labels:
     app: feedback-frontend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: feedback-frontend
@@ -17,19 +17,18 @@ spec:
       containers:
       - name: feedback-frontend
         image: feedback-frontend:latest
-        imagePullPolicy: Always
         ports:
         - containerPort: 8080
         env:
-        - name: BACKEND_URL
-          value: "http://feedback-backend:8080"
+        - name: REACT_APP_API_URL
+          value: "http://feedback-backend:3000"
         resources:
           requests:
-            memory: "64Mi"
+            memory: "128Mi"
             cpu: "100m"
           limits:
-            memory: "128Mi"
-            cpu: "250m"
+            memory: "256Mi"
+            cpu: "200m"
         readinessProbe:
           httpGet:
             path: /
@@ -49,3 +48,26 @@ spec:
           capabilities:
             drop:
               - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: feedback-frontend
+spec:
+  selector:
+    app: feedback-frontend
+  ports:
+  - port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: feedback-frontend
+spec:
+  to:
+    kind: Service
+    name: feedback-frontend
+  port:
+    targetPort: 8080

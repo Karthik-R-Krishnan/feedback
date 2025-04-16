@@ -1,61 +1,122 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 const path = require("path");
 const app = express();
 
-// Configure CORS to be more permissive
+// Security middleware
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// Configure CORS
 app.use(cors({
-  origin: '*',
+  origin: process.env.FRONTEND_URL || '*',
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type']
+  allowedHeaders: ['Content-Type', 'Accept'],
+  credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
-// Connect to MongoDB using environment variable or fallback to localhost for local development
-const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/feedbackdb';
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+// MongoDB connection with retry logic
+const connectWithRetry = async () => {
+  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/feedbackdb';
+  const maxRetries = 5;
+  let retries = 0;
 
-const Feedback = mongoose.model("Feedback", {
-  name: String,
-  message: String
+  while (retries < maxRetries) {
+    try {
+      await mongoose.connect(mongoURI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
+      });
+      console.log('MongoDB connected successfully');
+      return;
+    } catch (err) {
+      retries++;
+      console.error(`MongoDB connection attempt ${retries} failed:`, err);
+      if (retries === maxRetries) {
+        console.error('Max retries reached. Exiting...');
+        process.exit(1);
+      }
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+};
+
+connectWithRetry();
+
+// Feedback Schema with validation
+const feedbackSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Name is required'],
+    trim: true,
+    maxlength: [100, 'Name cannot be more than 100 characters']
+  },
+  message: {
+    type: String,
+    required: [true, 'Message is required'],
+    trim: true,
+    maxlength: [1000, 'Message cannot be more than 1000 characters']
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
 
-app.post("/api/feedback", async (req, res) => {
+const Feedback = mongoose.model("Feedback", feedbackSchema);
+
+// Error handling middleware
+const errorHandler = (err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+};
+
+app.post("/api/feedback", async (req, res, next) => {
   try {
     const { name, message } = req.body;
-    if (!name || !message) {
-      return res.status(400).send("Name and message are required");
-    }
     const feedback = new Feedback({ name, message });
     await feedback.save();
-    res.status(201).send("Feedback saved");
+    res.status(201).json({ message: "Feedback saved successfully" });
   } catch (error) {
-    console.error("Error saving feedback:", error);
-    res.status(500).json({ error: "Error saving feedback", details: error.message });
+    next(error);
   }
 });
 
-app.get("/api/feedback", async (req, res) => {
+app.get("/api/feedback", async (req, res, next) => {
   try {
-    const feedbacks = await Feedback.find();
+    const feedbacks = await Feedback.find().sort({ createdAt: -1 });
     res.json(feedbacks);
   } catch (error) {
-    console.error("Error fetching feedback:", error);
-    res.status(500).json({ error: "Error fetching feedback", details: error.message });
+    next(error);
   }
 });
 
-// Health check endpoint for OpenShift
+// Health check endpoint
 app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+  res.status(200).json({
+    status: "OK",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
+
+// Apply error handling middleware
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

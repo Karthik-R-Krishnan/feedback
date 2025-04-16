@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' http://feedback-backend:8080; img-src 'self' data: https:; style-src 'self' 'unsafe-inline';">
 <title>Feedback Collector</title>
 <style>
 /* General Styles */
@@ -342,8 +344,19 @@ h2 {
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   // Get the backend URL from environment or default to local development URL
-  const backendUrl = "http://feedback-backend:8080";
+  const backendUrl = window.location.protocol + "//" + window.location.hostname + ":8080";
   console.log("Using backend URL:", backendUrl);
+
+  // Add error handling for network issues
+  window.addEventListener('online', function() {
+    console.log('Application is online');
+    loadFeedback();
+  });
+
+  window.addEventListener('offline', function() {
+    console.log('Application is offline');
+    alert('Network connection lost. Please check your connection and try again.');
+  });
 
   document.getElementById("feedbackForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -353,7 +366,10 @@ document.addEventListener("DOMContentLoaded", function() {
     try {
       const response = await fetch(`${backendUrl}/api/feedback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ name, message })
       });
       
@@ -385,7 +401,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
   async function loadFeedback() {
     try {
-      const response = await fetch(`${backendUrl}/api/feedback`);
+      const response = await fetch(`${backendUrl}/api/feedback`, {
+        headers: {
+          "Accept": "application/json"
+        }
+      });
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -398,22 +419,26 @@ document.addEventListener("DOMContentLoaded", function() {
       
       list.innerHTML = "";
       
+      if (data.length === 0) {
+        list.innerHTML = '<li style="text-align: center; color: #666;">No feedback available yet.</li>';
+        return;
+      }
+      
       data.forEach((entry) => {
         const li = document.createElement("li");
         li.innerHTML = `
-          <p class="name">${entry.name}</p>
-          <p class="feedback">${entry.message.length > 150 ? 
-            entry.message.substring(0, 150) + '...' : entry.message}</p>
+          <p class="name">${escapeHtml(entry.name)}</p>
+          <p class="feedback">${escapeHtml(entry.message.length > 150 ? 
+            entry.message.substring(0, 150) + '...' : entry.message)}</p>
         `;
         li.addEventListener('click', function() {
-          // Open modal with the selected feedback's details
           const modalName = document.getElementById("modal-name");
           const modalFeedback = document.getElementById("modal-feedback");
           const feedbackModal = document.getElementById("feedback-modal");
           
           if (modalName && modalFeedback && feedbackModal) {
-            modalName.textContent = entry.name;
-            modalFeedback.textContent = entry.message;
+            modalName.textContent = escapeHtml(entry.name);
+            modalFeedback.textContent = escapeHtml(entry.message);
             feedbackModal.style.display = "flex";
           }
         });
@@ -421,8 +446,21 @@ document.addEventListener("DOMContentLoaded", function() {
       });
     } catch (error) {
       console.error("Error loading feedback:", error);
-      alert(`Failed to load feedback: ${error.message}`);
+      const list = document.getElementById("feedbackList");
+      if (list) {
+        list.innerHTML = '<li style="text-align: center; color: #dc2626;">Failed to load feedback. Please try again later.</li>';
+      }
     }
+  }
+
+  // Helper function to escape HTML and prevent XSS
+  function escapeHtml(unsafe) {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
   }
 
   // Initial load of feedback data
